@@ -64,17 +64,17 @@ foaiendsem/
 
 ## Setup & Running
 
-1. Open `index.html` in a browser, **OR**
-2. Serve locally:
-   ```bash
-   python3 -m http.server 8080
-   # Open http://localhost:8080
-   ```
+1. **Open `index.html`** in any modern browser.
+2. **Configure APIs**: Click the **Gear icon (⚙️)** in the top right corner.
+3. **Enter Keys**: Provide your OpenAI and NewsAPI keys. These are saved securely in your browser's `localStorage`.
+4. **Enjoy**: The ISS tracker works immediately; AI and News will activate once keys are saved.
 
-## Deployment Safety
-- All API keys are isolated in `config.js` for easy management
-- For production, use a backend proxy to protect API keys
-- NewsAPI free tier may block browser-side requests on deployed domains — use a server proxy in that case
+## Deployment
+
+This app is optimized for **Vercel** and **GitHub Pages**.
+1. Push to GitHub (Done).
+2. Connect to Vercel and import the repo.
+3. No environment variables are needed, as users enter their own keys in the UI.
 
 ## Speed Calculation
 Uses the **Haversine formula** to calculate great-circle distance between two consecutive ISS positions, divided by the time interval:
