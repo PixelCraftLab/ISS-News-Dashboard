@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISS & News Live Dashboard | Real-Time Tracking</title>
+    <meta name="description" content="Real-time International Space Station tracker with live news feed and AI-powered chatbot. Track ISS position, speed, and trajectory on an interactive map.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    
+    <!-- App CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="app-loader" class="app-loader">
+        <div class="loader-content">
+            <div class="orbit-loader">
+                <div class="orbit-ring"></div>
+                <div class="orbit-dot"></div>
+            </div>
+            <h2>Initializing Dashboard</h2>
+            <p class="loader-status" id="loader-status">Connecting to ISS...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="main-header" id="main-header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-satellite"></i>
+                <span class="logo-text">ISS & News <span class="accent">Dashboard</span></span>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="live-indicator" id="live-indicator">
+                <span class="live-dot"></span>
+                <span>LIVE</span>
+            </div>
+            <div class="header-time" id="header-time"></div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn" id="theme-toggle" title="Toggle Light/Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="header-btn" id="settings-toggle" title="API Settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="header-btn" id="refresh-all-btn" title="Refresh All Data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- ISS Section -->
+        <section class="dashboard-section iss-section" id="iss-section">
+            <div class="section-header">
+                <h1><i class="fas fa-space-shuttle"></i> ISS Live Tracker</h1>
+                <div class="section-actions">
+                    <button class="btn btn-sm btn-outline" id="iss-refresh-btn" title="Refresh ISS Data">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="iss-grid">
+                <!-- Map -->
+                <div class="card map-card" id="map-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-map-marked-alt"></i> Live Position</h2>
+                        <span class="badge" id="positions-tracked">0 positions</span>
+                    </div>
+                    <div id="iss-map" class="iss-map"></div>
+                    <div class="map-overlay-info" id="map-overlay-info">
+                        <span id="nearest-place-label"><i class="fas fa-map-pin"></i> Locating...</span>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="iss-stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-icon lat-icon"><i class="fas fa-arrows-alt-v"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Latitude</span>
+                            <span class="stat-value" id="iss-lat">--</span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon lng-icon"><i class="fas fa-arrows-alt-h"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Longitude</span>
+                            <span class="stat-value" id="iss-lng">--</span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon speed-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Speed</span>
+                            <span class="stat-value" id="iss-speed">-- km/h</span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon location-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Location</span>
+                            <span class="stat-value location-text" id="iss-location">Locating...</span>
+                        </div>
+                    </div>
+
+                    <!-- People in Space -->
+                    <div class="card astronaut-card" id="astronaut-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-user-astronaut"></i> People in Space</h2>
+                            <span class="badge astronaut-count" id="astronaut-count">0</span>
+                        </div>
+                        <div class="astronaut-list" id="astronaut-list">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- News Section -->
+        <section class="dashboard-section news-section" id="news-section">
+            <div class="section-header">
+                <h2><i class="fas fa-newspaper"></i> Latest News</h2>
+                <div class="section-actions">
+                    <div class="search-wrapper" id="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="news-search" class="search-input" placeholder="Search articles..." autocomplete="off">
+                        <button class="search-clear" id="search-clear" title="Clear search" style="display:none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <select id="news-sort" class="sort-select">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" id="news-refresh-btn" title="Refresh News">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- News Loading -->
+            <div class="news-loader" id="news-loader" style="display:none;">
+                <div class="spinner"></div>
+                <p>Fetching latest news...</p>
+            </div>
+
+            <!-- News Error -->
+            <div class="news-error" id="news-error" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p id="news-error-msg">Failed to load news.</p>
+                <button class="btn btn-sm btn-primary" id="news-retry-btn">Retry</button>
+            </div>
+
+            <!-- News Grid -->
+            <div class="news-grid" id="news-grid"></div>
+
+            <!-- Pagination -->
+            <div class="news-pagination" id="news-pagination" style="display:none;">
+                <button class="btn btn-sm btn-outline" id="prev-page-btn" disabled>
+                    <i class="fas fa-chevron-left"></i> Prev
+                </button>
+                <span class="page-info" id="page-info">Page 1 of 2</span>
+                <button class="btn btn-sm btn-outline" id="next-page-btn">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Chatbot -->
+    <div class="chatbot-fab" id="chatbot-fab" title="Open AI Assistant">
+        <i class="fas fa-robot"></i>
+        <span class="fab-pulse"></span>
+    </div>
+
+    <div class="chatbot-window" id="chatbot-window" style="display:none;">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+                <div>
+                    <h3>Dashboard AI</h3>
+                    <span class="chat-subtitle">Answers from ISS & News data only</span>
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button class="chat-action-btn" id="clear-chat-btn" title="Clear Chat">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button class="chat-action-btn" id="close-chat-btn" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-welcome">
+                <div class="welcome-icon"><i class="fas fa-satellite-dish"></i></div>
+                <p>Hi! I can answer questions about the <strong>ISS position</strong> and <strong>current news</strong> shown on this dashboard. Ask me anything about the data displayed!</p>
+            </div>
+        </div>
+        <div class="chat-typing" id="chat-typing" style="display:none;">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span>AI is thinking...</span>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Ask about ISS or News..." autocomplete="off">
+            <button class="chat-send-btn" id="chat-send-btn" title="Send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> API Settings</h3>
+                <button class="modal-close" id="close-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-desc">Enter your API keys to enable AI and News features. Keys are saved locally in your browser.</p>
+                <div class="setting-item">
+                    <label>OpenAI API Key</label>
+                    <input type="password" id="openai-key-input" placeholder="sk-...">
+                </div>
+                <div class="setting-item">
+                    <label>NewsAPI Key</label>
+                    <input type="password" id="news-key-input" placeholder="b588...">
+                </div>
+                <button class="btn btn-primary btn-full" id="save-settings">Save & Refresh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- App JS -->
+    <script src="config.js?v=2"></script>
+    <script src="iss.js"></script>
+    <script src="news.js"></script>
+    <script src="chatbot.js?v=2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
